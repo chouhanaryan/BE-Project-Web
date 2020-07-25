@@ -30,3 +30,5 @@ urlpatterns = [
         name="Create_Project_with_Contributors",
     ),
 ]
+
+urlpatterns += router.get_urls()

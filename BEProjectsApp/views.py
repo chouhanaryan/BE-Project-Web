@@ -1,4 +1,4 @@
-from BEProjectsApp.models import Project, TeacherProfile, Contributor, DOMAIN_CHOICES
+from BEProjectsApp.models import Project, Teacher, Contributor, DOMAIN_CHOICES
 from BEProjectsApp.serializers import (
     ProjectSerializer,
     TeacherSerializer,
@@ -8,11 +8,7 @@ from BEProjectsApp.serializers import (
 )
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.views import APIView
-from rest_framework import generics, status
-from rest_framework import viewsets, mixins
-from rest_framework import filters
-from rest_framework import serializers
+from rest_framework import generics, status, viewsets, mixins, filters, serializers
 from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.http import JsonResponse, HttpResponse
@@ -21,7 +17,6 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view
 from .permissions import IsUserOrReadOnly
-from rest_framework.views import APIView
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
@@ -47,7 +42,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
 
 class TeacherViewSet(viewsets.ModelViewSet):
-    queryset = TeacherProfile.objects.all()
+    queryset = Teacher.objects.all()
     serializer_class = TeacherSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["subject"]
@@ -118,13 +113,13 @@ class CreateProjectWithContributors(generics.GenericAPIView):
             print(json.loads(data["contributors"]))
             cont = json.loads(data["contributors"])
             try:
-                teacher = TeacherProfile.objects.get(pk=proj["teacher"])
+                teacher = Teacher.objects.get(pk=proj["teacher"])
             except:
                 return JsonResponse(
                     {"Message": "Teacher id not found"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-            # teacher = get_object_or_404(TeacherProfile,pk=proj["teacher"])
+            # teacher = get_object_or_404(Teacher,pk=proj["teacher"])
             print(data["document"])
             project = Project(
                 title=proj["title"],
@@ -152,6 +147,9 @@ class CreateProjectWithContributors(generics.GenericAPIView):
             print(e)
             return JsonResponse({"Message": "error"}, status.HTTP_400_BAD_REQUEST)
         return JsonResponse({"Message": "Success"}, status=status.HTTP_201_CREATED)
+
+    def get_serializer_class(self):
+        return ProjectSerializer
 
 
 class Approve(generics.GenericAPIView):
@@ -186,7 +184,7 @@ class Login(generics.GenericAPIView):
                 print(token.key)
 
                 login(request, user)
-                u = TeacherProfile.objects.get(user=user)
+                u = Teacher.objects.get(user=user)
                 print(u)
                 data = {
                     "Name": u.user.first_name + " " + u.user.last_name,
@@ -203,6 +201,9 @@ class Login(generics.GenericAPIView):
             data = {"Message": "There was error authenticating"}
             return JsonResponse(data, status=status.HTTP_400_BAD_REQUEST)
 
+    def get_serializer_class(self):
+        return LoginSerializer
+
 
 class Delete_Project(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
@@ -217,4 +218,4 @@ class Delete_Project(generics.GenericAPIView):
             return JsonResponse(data, status=status.HTTP_200_OK)
         except:
             data = {"Message": "Error deleteing project"}
-            return JsonResponse(data, status=status.HTTP_200_OK)
+            return JsonResponse(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
